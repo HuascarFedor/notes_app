@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Note } from './note.entity';
 import { Repository } from 'typeorm';
 import { CreateNoteDto } from './dto/create-note.dto';
+import { UpdateNoteDto } from './dto/update-note.dto';
 
 @Injectable()
 export class NotesService {
@@ -26,5 +27,20 @@ export class NotesService {
 
   async findAll(): Promise<Note[]> {
     return this.notesRepository.find();
+  }
+
+  async update(id: number, updateNotaDto: UpdateNoteDto): Promise<Note> {
+    const updateResult = await this.notesRepository.update(id, updateNotaDto);
+    if (updateResult.affected === 0) {
+      throw new NotFoundException(`Nota con ID ${id} no existe`);
+    }
+    return this.findOne(id);
+  }
+
+  async remove(id: number): Promise<void> {
+    const deleteResult = await this.notesRepository.delete(id);
+    if (deleteResult.affected === 0) {
+      throw new NotFoundException(`Nota con ID ${id} no existe`);
+    }
   }
 }
