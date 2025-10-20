@@ -3,6 +3,8 @@ import { NotesService } from './notes.service';
 import { ObjectLiteral, Repository } from 'typeorm';
 import { Note } from './note.entity';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { NotFoundException } from '@nestjs/common';
+import { UpdateResult } from 'typeorm/browser';
 
 const mockNoteRepository = () => ({
   create: jest.fn(),
@@ -58,5 +60,64 @@ describe('NotesService', () => {
 
     expect(repository.create).toHaveBeenCalled();
     expect(repository.save).toHaveBeenCalled();
+  });
+
+  describe('Deberia encontrar una nota por ID', () => {
+    describe('Cuando la nota NO existe', () => {
+      it('Deberia lanzar NotFoundException', async () => {
+        jest.spyOn(repository, 'findOneBy').mockResolvedValue(null);
+
+        const id = 999;
+        await expect(service.findOne(id)).rejects.toThrow(NotFoundException);
+
+        expect(repository.findOneBy).toHaveBeenCalledWith({ id });
+      });
+    });
+    describe('Cuando la nota SI existe', () => {
+      it('Deberia retornar una nota', async () => {
+        jest.spyOn(repository, 'findOneBy').mockResolvedValue(mockNote as Note);
+
+        const id = 1;
+        const result = await service.findOne(id);
+        expect(result).toEqual(mockNote);
+
+        expect(repository.findOneBy).toHaveBeenCalledWith({ id });
+      });
+    });
+  });
+
+  it('Deberia retornar todas las notas', async () => {
+    jest.spyOn(repository, 'find').mockResolvedValue([mockNote] as Note[]);
+
+    const result = await service.findAll();
+    expect(result).toEqual([mockNote]);
+
+    expect(repository.find).toHaveBeenCalled();
+  });
+
+  describe('Deberia modificar una nota por ID', () => {
+    describe('Cuando la nota NO existe', () => {
+      it('Deberia lanzar NotFoundException', async () => {
+        const updateResult = {
+          affected: 0,
+        } as UpdateResult;
+        jest.spyOn(repository, 'update').mockResolvedValue(updateResult);
+
+        const id = 1;
+        const updateNoteDto = {
+          title: 'Nota modificada',
+        };
+        await expect(service.update(id, updateNoteDto)).rejects.toThrow(
+          NotFoundException,
+        );
+
+        expect(repository.update).toHaveBeenCalledWith(id, updateNoteDto);
+      });
+    });
+    /*describe('Cuando la nota SI existe', () => {
+      it('Deberia retornar una nota', async () => {
+        
+      });
+    });*/
   });
 });
