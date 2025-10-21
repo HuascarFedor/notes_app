@@ -4,7 +4,7 @@ import { ObjectLiteral, Repository } from 'typeorm';
 import { Note } from './note.entity';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException } from '@nestjs/common';
-import { UpdateResult } from 'typeorm/browser';
+import { UpdateResult, DeleteResult } from 'typeorm/browser';
 
 const mockNoteRepository = () => ({
   create: jest.fn(),
@@ -114,10 +114,59 @@ describe('NotesService', () => {
         expect(repository.update).toHaveBeenCalledWith(id, updateNoteDto);
       });
     });
-    /*describe('Cuando la nota SI existe', () => {
-      it('Deberia retornar una nota', async () => {
-        
+
+    describe('Cuando la nota SI existe', () => {
+      it('Deberia modificar la nota', async () => {
+        const updateResult = {
+          affected: 1,
+        } as UpdateResult;
+        jest.spyOn(repository, 'update').mockResolvedValue(updateResult);
+
+        const id = 1;
+        const updateNoteDto = {
+          title: 'Nota modifcada',
+        };
+        const noteUpdated = {
+          ...mockNote,
+          ...updateNoteDto,
+        } as Note;
+        jest.spyOn(service, 'findOne').mockResolvedValue(noteUpdated);
+
+        const result = await service.update(id, updateNoteDto);
+        expect(result).toEqual(noteUpdated);
+
+        expect(repository.update).toHaveBeenCalledWith(id, updateNoteDto);
       });
-    });*/
+    });
+  });
+
+  describe('Deberia eliminar una nota por ID', () => {
+    describe('Cuando la nota NO existe', () => {
+      it('Deberia lanzar NotFoundException', async () => {
+        const deleteResult = {
+          affected: 0,
+        } as DeleteResult;
+        jest.spyOn(repository, 'delete').mockResolvedValue(deleteResult);
+
+        const id = 999;
+        await expect(service.remove(id)).rejects.toThrow(NotFoundException);
+
+        expect(repository.delete).toHaveBeenCalledWith(id);
+      });
+    });
+
+    describe('Cuando la nota SI existe', () => {
+      it('Deberia eliminar la nota', async () => {
+        const deleteResult = {
+          affected: 1,
+        } as DeleteResult;
+        jest.spyOn(repository, 'delete').mockResolvedValue(deleteResult);
+
+        const id = 1;
+        await service.remove(id);
+
+        expect(repository.delete).toHaveBeenCalledWith(id);
+      });
+    });
   });
 });
